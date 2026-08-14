@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { getClient } from "@/lib/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -24,11 +24,6 @@ Rules:
 `.trim();
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "Missing GEMINI_API_KEY" }, { status: 500 });
-  }
-
   let body: { audioBase64?: string; mime?: string };
   try {
     body = await req.json();
@@ -40,7 +35,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No audio" }, { status: 400 });
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  let ai;
+  try {
+    ai = getClient();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Not configured";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
   let lastError = "Unknown error";
 
   for (const model of MODELS) {

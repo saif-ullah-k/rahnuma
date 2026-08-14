@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
+import { getClient } from "@/lib/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -60,14 +61,6 @@ const SCHEMA = {
 };
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Missing GEMINI_API_KEY" },
-      { status: 500 },
-    );
-  }
-
   let body: { problem?: string; history?: Turn[] };
   try {
     body = await req.json();
@@ -95,7 +88,13 @@ Questions asked so far: ${history.filter((t) => t.role === "assistant").length}
 
 What is your next single question, or are you done?`;
 
-  const ai = new GoogleGenAI({ apiKey });
+  let ai;
+  try {
+    ai = getClient();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Not configured";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
   let lastError = "Unknown error";
 
   for (const model of MODELS) {

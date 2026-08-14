@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { getMode } from "@/lib/modes";
+import { MODELS, friendlyError, getClient, isFatal } from "@/lib/gemini";
 import type { AskRequest, AskResponse, Result } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-import { MODELS, friendlyError, isFatal } from "@/lib/gemini";
 
 const LOCALIZED = {
   type: Type.OBJECT,
@@ -56,14 +55,6 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return bad(
-      "The server is missing its GEMINI_API_KEY. Add it to .env.local and restart.",
-      500,
-    );
-  }
-
   let body: AskRequest;
   try {
     body = (await req.json()) as AskRequest;
@@ -105,7 +96,12 @@ export async function POST(req: Request) {
     text: text ? `User's own words / input:\n${text}` : "No extra text was provided.",
   });
 
-  const ai = new GoogleGenAI({ apiKey });
+  let ai;
+  try {
+    ai = getClient();
+  } catch (err) {
+    return bad(err instanceof Error ? err.message : "Client not configured", 500);
+  }
   let lastError = "Unknown error";
 
   for (const model of MODELS) {

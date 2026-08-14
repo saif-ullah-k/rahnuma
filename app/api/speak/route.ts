@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { getTtsClient } from "@/lib/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -48,11 +48,6 @@ function toWav(pcm: Buffer): Buffer {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "Missing GEMINI_API_KEY" }, { status: 500 });
-  }
-
   let body: { text?: string; urdu?: boolean };
   try {
     body = await req.json();
@@ -72,7 +67,13 @@ export async function POST(req: Request) {
     ? `Read this out in a warm, calm, natural Urdu speaking voice, at an unhurried pace, as if explaining to an elder who is worried: ${clipped}`
     : `Read this out in a warm, clear, natural voice at a steady pace: ${clipped}`;
 
-  const ai = new GoogleGenAI({ apiKey });
+  let ai;
+  try {
+    ai = getTtsClient();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Not configured";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
   let lastError = "Unknown error";
 
   for (const model of TTS_MODELS) {
