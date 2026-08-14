@@ -116,3 +116,45 @@ body {
   background: var(--brand);
   color: var(--bg);
 }
+
+/*
+ * "Download PDF" prints this block and nothing else. Printing the real DOM
+ * rather than generating a PDF in JS is what keeps Nastaliq correctly shaped
+ * and right-to-left, using the font the page has already loaded.
+ */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-sheet,
+  .print-sheet * {
+    visibility: visible !important;
+  }
+
+  .print-sheet {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    white-space: pre-wrap;
+    color: #000;
+    background: #fff;
+    font-size: 12pt;
+    line-height: 1.7;
+  }
+
+  .print-sheet.urdu {
+    font-size: 15pt;
+    line-height: 2.4;
+  }
+
+  @page {
+    margin: 20mm 18mm;
+  }
+}

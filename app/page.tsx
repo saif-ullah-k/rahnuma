@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { MODE_LIST } from "@/lib/modes";
+import { useLang } from "@/lib/i18n";
 import Icon from "@/components/Icon";
 
 /** Tailwind needs literal class names, so accents are mapped rather than built. */
@@ -12,28 +15,33 @@ const ACCENT: Record<string, string> = {
 };
 
 export default function Home() {
+  const { t, isUrdu } = useLang();
+  const u = isUrdu ? "urdu" : "";
+
   return (
     <div className="mx-auto max-w-5xl px-5">
       <section className="pt-16 pb-12 sm:pt-24 sm:pb-16 max-w-2xl rise">
-        <p className="inline-flex items-center gap-2 text-xs font-medium tracking-wide uppercase px-3 py-1.5 rounded-full mb-6 bg-[var(--brand-soft)] text-[var(--brand)]">
+        <p
+          className={`inline-flex items-center gap-2 text-xs font-medium tracking-wide uppercase px-3 py-1.5 rounded-full mb-6 bg-[var(--brand-soft)] text-[var(--brand)] ${u}`}
+        >
           <span className="w-1.5 h-1.5 rounded-full bg-current" />
-          Pakistan @79
+          {t.home.badge}
         </p>
 
-        <h1 className="text-4xl sm:text-[3.25rem] font-semibold leading-[1.08] tracking-tight text-balance">
-          Pakistan runs on paper.
+        <h1
+          className={`font-semibold leading-[1.08] tracking-tight text-balance ${
+            isUrdu ? "urdu text-3xl sm:text-5xl leading-[1.5]" : "text-4xl sm:text-[3.25rem]"
+          }`}
+        >
+          {t.home.line1}
           <br />
-          <span className="text-[var(--brand)]">Now the paper makes sense.</span>
+          <span className="text-[var(--brand)]">{t.home.line2}</span>
         </h1>
 
-        <p className="mt-6 text-lg leading-relaxed muted text-pretty">
-          Bills, lab reports, prescriptions and government notices decide what
-          ordinary people pay, take and owe — and almost none of them are written
-          to be understood. Photograph any of it. Get it back in plain Urdu.
-        </p>
-
-        <p className="urdu mt-4 text-xl leading-loose" lang="ur">
-          کاغذ سمجھ نہ آئے تو نقصان ہوتا ہے۔ تصویر کھینچیں، سادہ اردو میں جواب پائیں۔
+        <p
+          className={`mt-6 leading-relaxed muted text-pretty ${isUrdu ? "urdu text-xl" : "text-lg"}`}
+        >
+          {t.home.lede}
         </p>
       </section>
 
@@ -59,11 +67,17 @@ export default function Home() {
             <h2 className="mt-5 text-xl font-semibold tracking-tight">
               {mode.name}
             </h2>
-            <p className="mt-1 text-[15px] font-medium">{mode.tagline}</p>
-            <p className="mt-3 text-sm leading-relaxed muted">{mode.problem}</p>
+            <p className={`mt-1 font-medium ${isUrdu ? "urdu text-lg" : "text-[15px]"}`}>
+              {t.modes[mode.id].tagline}
+            </p>
+            <p
+              className={`mt-3 leading-relaxed muted ${isUrdu ? "urdu text-base" : "text-sm"}`}
+            >
+              {t.modes[mode.id].problem}
+            </p>
 
             <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--brand)]">
-              Open
+              {t.home.open}
               <Icon
                 name="arrow"
                 className="w-4 h-4 transition-transform group-hover:translate-x-1"
@@ -92,18 +106,19 @@ export default function Home() {
           <h2 className="mt-5 text-xl font-semibold tracking-tight">
             Bijli Bachao
           </h2>
-          <p className="mt-1 text-[15px] font-medium text-white/90">
-            The 200-unit cliff, before it catches you
+          <p
+            className={`mt-1 font-medium text-white/90 ${isUrdu ? "urdu text-lg" : "text-[15px]"}`}
+          >
+            {t.home.bijliTagline}
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-white/70 max-w-xl">
-            Stay at or under 200 units and you are a protected consumer. Cross it
-            by a single unit and every unit on the bill — including the first
-            hundred — reprices at roughly three times the rate. Most people find
-            out when the bill arrives.
+          <p
+            className={`mt-3 leading-relaxed text-white/70 max-w-xl ${isUrdu ? "urdu text-base" : "text-sm"}`}
+          >
+            {t.home.bijliBlurb}
           </p>
 
           <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium">
-            Check my meter
+            {t.home.bijliCta}
             <Icon
               name="arrow"
               className="w-4 h-4 transition-transform group-hover:translate-x-1"
@@ -113,23 +128,15 @@ export default function Home() {
       </section>
 
       <section className="mt-16 panel rounded-2xl p-6 sm:p-8">
-        <h2 className="text-lg font-semibold tracking-tight">
-          Why this exists
+        <h2 className={`text-lg font-semibold tracking-tight ${u}`}>
+          {t.home.whyTitle}
         </h2>
-        <div className="mt-4 grid gap-6 sm:grid-cols-3 text-sm leading-relaxed muted">
-          <p>
-            An arzi nawees sits outside every government office charging Rs 200 to
-            word a complaint correctly. That job exists because ordinary Urdu is
-            not accepted by bureaucracy.
-          </p>
-          <p>
-            Pharmacies charge above the maximum retail price printed on the box by
-            law, because almost nobody thinks to check the box.
-          </p>
-          <p>
-            A lab hands over a page of numbers and arrows. The doctor has four
-            minutes. The patient goes home frightened and no better informed.
-          </p>
+        <div
+          className={`mt-4 grid gap-6 sm:grid-cols-3 leading-relaxed muted ${isUrdu ? "urdu text-base" : "text-sm"}`}
+        >
+          {t.home.why.map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
         </div>
       </section>
     </div>

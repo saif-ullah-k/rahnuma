@@ -11,6 +11,7 @@ import {
 } from "@/lib/bijli";
 import Icon from "@/components/Icon";
 import SpeakButton from "@/components/SpeakButton";
+import { useLang } from "@/lib/i18n";
 
 /** "Rs" is read as letters by a TTS voice, so narration spells out روپے. */
 function rupeesSpoken(n: number): string {
@@ -18,6 +19,9 @@ function rupeesSpoken(n: number): string {
 }
 
 export default function BijliPage() {
+  const { t, isUrdu } = useLang();
+  const u = isUrdu ? "urdu" : "";
+
   const [units, setUnits] = useState(148);
   const [days, setDays] = useState(18);
   const [wasProtected, setWasProtected] = useState(true);
@@ -50,10 +54,10 @@ export default function BijliPage() {
     <div className="mx-auto max-w-3xl px-5 py-10 sm:py-14">
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-sm muted hover:text-[var(--brand)] transition-colors mb-8"
+        className={`inline-flex items-center gap-1.5 text-sm muted hover:text-[var(--brand)] transition-colors mb-8 ${u}`}
       >
         <Icon name="arrow" className="w-4 h-4 rotate-180" />
-        All tools
+        {t.tool.allTools}
       </Link>
 
       <header className="rise">
@@ -65,45 +69,50 @@ export default function BijliPage() {
             بجلی بچاؤ
           </span>
         </div>
-        <p className="mt-2 text-lg font-medium">
-          The 200-unit cliff, before it catches you
+        <p className={`mt-2 font-medium ${isUrdu ? "urdu text-xl" : "text-lg"}`}>
+          {t.bijli.tagline}
         </p>
-        <p className="mt-3 muted leading-relaxed max-w-2xl">
-          Stay at or under {PROTECTED_LIMIT} units and you are a protected
-          consumer. Cross it by one unit and the whole bill reprices at
-          unprotected rates — including the first hundred units you had already
-          earned cheaply.
+        <p
+          className={`mt-3 muted leading-relaxed max-w-2xl ${isUrdu ? "urdu text-lg" : ""}`}
+        >
+          {t.bijli.intro}
         </p>
       </header>
 
       {/* The cliff. This is the point of the whole page. */}
       <section className="mt-10 panel rounded-2xl p-6 sm:p-7 rise">
-        <h2 className="text-sm font-semibold uppercase tracking-wide muted">
-          Drag across the limit
+        <h2
+          className={`text-sm font-semibold uppercase tracking-wide muted ${u}`}
+        >
+          {t.bijli.dragTitle}
         </h2>
 
         <div className="mt-6 flex items-end justify-between gap-6 flex-wrap">
           <div>
             <p className="text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums">
               {sliderUnits}
-              <span className="text-xl font-normal muted ml-2">units</span>
+              <span className="text-xl font-normal muted ml-2">
+                {t.bijli.units}
+              </span>
             </p>
             <p
-              className={`mt-2 text-sm font-medium ${
+              className={`mt-2 text-sm font-medium ${u} ${
                 sliderUnits > PROTECTED_LIMIT
                   ? "text-rose-600 dark:text-rose-400"
                   : "text-emerald-600 dark:text-emerald-400"
               }`}
             >
               {sliderUnits > PROTECTED_LIMIT
-                ? "Unprotected — every unit repriced"
-                : "Protected — subsidised rate"}
+                ? t.bijli.unprotectedNow
+                : t.bijli.protectedNow}
             </p>
           </div>
 
           <div className="text-right">
-            <p className="text-xs font-medium uppercase tracking-wide muted">
-              Estimated bill
+            <p
+              className={`text-xs font-medium uppercase tracking-wide muted ${u}`}
+            >
+              {t.bijli.estBill}
             </p>
             <p
               className={`text-4xl sm:text-5xl font-semibold tracking-tight tabular-nums transition-colors ${
@@ -134,33 +143,38 @@ export default function BijliPage() {
           <span>320</span>
         </div>
 
-        <p className="mt-6 rounded-xl px-5 py-4 bg-[var(--brand-soft)] text-[15px] leading-relaxed">
-          One extra unit at the limit takes the bill from{" "}
-          <strong className="tabular-nums">{rupees(atLimit.total)}</strong> to{" "}
-          <strong className="tabular-nums">{rupees(justOver.total)}</strong> — it
-          multiplies by{" "}
-          <strong>{jump.toFixed(1)}×</strong> for one unit of electricity.
+        <p
+          className={`mt-6 rounded-xl px-5 py-4 bg-[var(--brand-soft)] text-[15px] leading-relaxed ${u}`}
+        >
+          {t.bijli.cliffNote}{" "}
+          <strong className="tabular-nums">{rupees(atLimit.total)}</strong> →{" "}
+          <strong className="tabular-nums">{rupees(justOver.total)}</strong>{" "}
+          <strong className="tabular-nums">({jump.toFixed(1)}×)</strong>
         </p>
       </section>
 
       {/* Personal projection */}
       <section className="mt-6 panel rounded-2xl p-6 sm:p-7">
-        <h2 className="text-sm font-semibold uppercase tracking-wide muted">
-          Where you are this month
+        <h2
+          className={`text-sm font-semibold uppercase tracking-wide muted ${u}`}
+        >
+          {t.bijli.whereYouAre}
         </h2>
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <Field
-            label="Units used so far"
-            hint="From your meter, minus last month's reading"
+            label={t.bijli.unitsUsed}
+            hint={t.bijli.unitsUsedHint}
+            urdu={isUrdu}
             value={units}
             onChange={setUnits}
             min={0}
             max={900}
           />
           <Field
-            label="Days into the billing cycle"
-            hint="Roughly 30 days per cycle"
+            label={t.bijli.daysIn}
+            hint={t.bijli.daysInHint}
+            urdu={isUrdu}
             value={days}
             onChange={setDays}
             min={1}
@@ -175,10 +189,7 @@ export default function BijliPage() {
             onChange={(e) => setWasProtected(e.target.checked)}
             className="w-4 h-4 accent-[var(--brand)]"
           />
-          <span className="text-sm">
-            I stayed under {PROTECTED_LIMIT} units for the last six months
-            <span className="muted"> (protected consumer)</span>
-          </span>
+          <span className={`text-sm ${u}`}>{t.bijli.protectedCheck}</span>
         </label>
       </section>
 
@@ -189,13 +200,13 @@ export default function BijliPage() {
       >
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <span
-            className={`text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${
+            className={`text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${u} ${
               safe
                 ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400"
                 : "bg-rose-500/12 text-rose-700 dark:text-rose-400"
             }`}
           >
-            {safe ? "On track" : "You will cross the limit"}
+            {safe ? t.bijli.onTrack : t.bijli.willCross}
           </span>
           <SpeakButton text={narration} />
         </div>
@@ -213,22 +224,33 @@ export default function BijliPage() {
         </p>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <Stat label="Projected units" value={String(p.projectedUnits)} />
-          <Stat label="Estimated bill" value={rupees(bill.total)} />
           <Stat
-            label={safe ? "Daily budget" : "Over by"}
+            label={t.bijli.projected}
+            urdu={isUrdu}
+            value={String(p.projectedUnits)}
+          />
+          <Stat
+            label={t.bijli.estBill}
+            urdu={isUrdu}
+            value={rupees(bill.total)}
+          />
+          <Stat
+            label={safe ? t.bijli.dailyBudget : t.bijli.overBy}
+            urdu={isUrdu}
             value={
               safe
-                ? `${p.dailyAllowance} units`
-                : `${p.projectedUnits - PROTECTED_LIMIT} units`
+                ? `${p.dailyAllowance} ${t.bijli.units}`
+                : `${p.projectedUnits - PROTECTED_LIMIT} ${t.bijli.units}`
             }
           />
         </div>
 
         {p.daysLeft > 0 && (
           <>
-            <h3 className="mt-8 text-sm font-semibold uppercase tracking-wide muted">
-              {safe ? "That budget, in real terms" : "What to cut, per day"}
+            <h3
+              className={`mt-8 text-sm font-semibold uppercase tracking-wide muted ${u}`}
+            >
+              {safe ? t.bijli.inRealTerms : t.bijli.whatToCut}
             </h3>
             <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
               {APPLIANCES.map((a) => {
@@ -241,32 +263,29 @@ export default function BijliPage() {
                     <span className="text-sm">{a.name}</span>
                     <span className="text-sm font-medium tabular-nums shrink-0">
                       {hours >= 24
-                        ? "all day"
-                        : `${hours.toFixed(hours < 2 ? 1 : 0)} hrs/day`}
+                        ? t.bijli.allDay
+                        : `${hours.toFixed(hours < 2 ? 1 : 0)} ${t.bijli.perDay}`}
                     </span>
                   </li>
                 );
               })}
             </ul>
-            <p className="mt-3 text-xs muted">
-              For the {p.daysLeft} days left in this cycle. Appliance figures are
-              indicative.
+            <p className={`mt-3 text-xs muted ${u}`}>
+              {p.daysLeft} {t.bijli.forDaysLeft}
             </p>
           </>
         )}
 
-        <p className="mt-6 rounded-xl px-5 py-4 bg-[var(--brand-soft)] text-[15px] leading-relaxed">
-          Staying under the limit is worth{" "}
-          <strong className="tabular-nums">{rupees(p.savingIfProtected)}</strong>{" "}
-          on this bill alone.
+        <p
+          className={`mt-6 rounded-xl px-5 py-4 bg-[var(--brand-soft)] text-[15px] leading-relaxed ${u}`}
+        >
+          {t.bijli.worth}{" "}
+          <strong className="tabular-nums">{rupees(p.savingIfProtected)}</strong>
         </p>
       </section>
 
-      <p className="mt-6 text-xs leading-relaxed muted">
-        Estimates use indicative NEPRA residential slabs plus 18% GST and the TV
-        fee. Your DISCO adds fuel price adjustment and local levies, so the real
-        bill will differ. The cliff at {PROTECTED_LIMIT} units is the part that
-        matters, and that does not change.
+      <p className={`mt-6 text-xs leading-relaxed muted ${u}`}>
+        {t.bijli.caveat}
       </p>
     </div>
   );
@@ -275,6 +294,7 @@ export default function BijliPage() {
 function Field({
   label,
   hint,
+  urdu,
   value,
   onChange,
   min,
@@ -282,6 +302,7 @@ function Field({
 }: {
   label: string;
   hint: string;
+  urdu?: boolean;
   value: number;
   onChange: (n: number) => void;
   min: number;
@@ -289,7 +310,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium">{label}</label>
+      <label className={`block text-sm font-medium ${urdu ? "urdu" : ""}`}>
+        {label}
+      </label>
       <input
         type="number"
         value={value}
@@ -299,15 +322,27 @@ function Field({
         onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value))))}
         className="mt-2 w-full rounded-xl border border-[var(--line)] bg-transparent px-4 py-3 outline-none focus:border-[var(--brand)] transition-colors tabular-nums"
       />
-      <p className="mt-1.5 text-xs muted">{hint}</p>
+      <p className={`mt-1.5 text-xs muted ${urdu ? "urdu" : ""}`}>{hint}</p>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  urdu,
+}: {
+  label: string;
+  value: string;
+  urdu?: boolean;
+}) {
   return (
     <div className="rounded-xl px-4 py-3.5 bg-[var(--bg)] border border-[var(--line)]">
-      <p className="text-xs font-medium uppercase tracking-wide muted">{label}</p>
+      <p
+        className={`text-xs font-medium uppercase tracking-wide muted ${urdu ? "urdu" : ""}`}
+      >
+        {label}
+      </p>
       <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">
         {value}
       </p>

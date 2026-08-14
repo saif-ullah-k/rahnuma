@@ -1,96 +1,43 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LANGS, type Lang, type Result, type Tone } from "@/lib/types";
+import type { Lang, Result, Tone } from "@/lib/types";
+import { useLang } from "@/lib/i18n";
 import Icon from "@/components/Icon";
+import LangSwitch from "@/components/LangSwitch";
+import DraftActions from "@/components/DraftActions";
 import { useSpeech } from "@/lib/useSpeech";
 
-const TONE: Record<Tone, { ring: string; chip: string; label: Record<Lang, string> }> =
-  {
-    good: {
-      ring: "border-emerald-500/35",
-      chip: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-      label: { en: "All clear", ur: "سب ٹھیک ہے", roman: "Sab theek hai" },
-    },
-    warn: {
-      ring: "border-amber-500/35",
-      chip: "bg-amber-500/12 text-amber-700 dark:text-amber-400",
-      label: { en: "Needs attention", ur: "توجہ درکار ہے", roman: "Tawajjah chahiye" },
-    },
-    bad: {
-      ring: "border-rose-500/35",
-      chip: "bg-rose-500/12 text-rose-700 dark:text-rose-400",
-      label: { en: "Act now", ur: "فوری کارروائی کریں", roman: "Abhi karna hai" },
-    },
-    neutral: {
-      ring: "border-[var(--line)]",
-      chip: "bg-[var(--brand-soft)] text-[var(--brand)]",
-      label: { en: "Explained", ur: "تفصیل", roman: "Tafseel" },
-    },
-  };
+const RING: Record<Tone, string> = {
+  good: "border-emerald-500/35",
+  warn: "border-amber-500/35",
+  bad: "border-rose-500/35",
+  neutral: "border-[var(--line)]",
+};
 
-const UI: Record<Lang, Record<string, string>> = {
-  en: {
-    steps: "What to do",
-    draft: "Your application",
-    copy: "Copy",
-    copied: "Copied",
-    listen: "Listen",
-    stop: "Stop",
-  },
-  ur: {
-    steps: "کیا کرنا ہے",
-    draft: "آپ کی درخواست",
-    copy: "کاپی کریں",
-    copied: "کاپی ہو گئی",
-    listen: "سنیں",
-    stop: "روکیں",
-  },
-  roman: {
-    steps: "Kya karna hai",
-    draft: "Aap ki darkhwast",
-    copy: "Copy karein",
-    copied: "Copy ho gayi",
-    listen: "Sunain",
-    stop: "Rokein",
-  },
+const CHIP: Record<Tone, string> = {
+  good: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
+  warn: "bg-amber-500/12 text-amber-700 dark:text-amber-400",
+  bad: "bg-rose-500/12 text-rose-700 dark:text-rose-400",
+  neutral: "bg-[var(--brand-soft)] text-[var(--brand)]",
 };
 
 export default function ResultCard({ result }: { result: Result }) {
-  const [lang, setLang] = useState<Lang>("ur");
-  const [copied, setCopied] = useState(false);
+  const { lang, t, isUrdu } = useLang();
   const [autoSpeak, setAutoSpeak] = useState(true);
   const { speak, stop, speaking, loading } = useSpeech();
-  const langRef = useRef<Lang>("ur");
   const spokenFor = useRef<Result | null>(null);
+  const langRef = useRef<Lang>(lang);
+  langRef.current = lang;
 
   useEffect(() => {
-    const saved = localStorage.getItem("kaagaz.lang") as Lang | null;
-    if (saved && LANGS.some((l) => l.id === saved)) {
-      setLang(saved);
-      langRef.current = saved;
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAutoSpeak(localStorage.getItem("kaagaz.autoSpeak") !== "off");
   }, []);
 
-  function choose(next: Lang) {
-    setLang(next);
-    langRef.current = next;
-    localStorage.setItem("kaagaz.lang", next);
-    stop();
-  }
-
-  function toggleAuto() {
-    const next = !autoSpeak;
-    setAutoSpeak(next);
-    localStorage.setItem("kaagaz.autoSpeak", next ? "on" : "off");
-    if (!next) stop();
-  }
-
   const view = result[lang] ?? result.en;
-  const tone = TONE[result.tone] ?? TONE.neutral;
-  const t = UI[lang];
-  const isUrdu = lang === "ur";
+  const tone = result.tone ?? "neutral";
+  const c = t.card;
   const draft = isUrdu ? (result.draftUr ?? result.draft) : result.draft;
 
   const speakIn = useCallback(
@@ -107,120 +54,84 @@ export default function ResultCard({ result }: { result: Result }) {
     [result, speak],
   );
 
-  function toggleSpeak() {
-    if (speaking) {
-      stop();
-      return;
-    }
-    speakIn(lang);
-  }
-
   /**
    * Read the answer out the moment it lands. The person this is built for may
    * not be able to read it, so waiting for them to find a button is the wrong
-   * default. Autoplay is permitted here because submitting the document was
-   * itself a user gesture.
+   * default. Autoplay is permitted because submitting was itself a user gesture.
    */
   useEffect(() => {
     if (!autoSpeak) return;
     if (spokenFor.current === result) return;
     spokenFor.current = result;
-    const t = setTimeout(() => speakIn(langRef.current), 350);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => speakIn(langRef.current), 350);
+    return () => clearTimeout(timer);
   }, [result, autoSpeak, speakIn]);
 
-  async function copyDraft() {
-    if (!draft) return;
-    await navigator.clipboard.writeText(draft);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // A language change mid-read should not keep narrating the old language.
+  useEffect(() => {
+    stop();
+  }, [lang, stop]);
+
+  function toggleAuto() {
+    const next = !autoSpeak;
+    setAutoSpeak(next);
+    localStorage.setItem("kaagaz.autoSpeak", next ? "on" : "off");
+    if (!next) stop();
   }
 
   return (
-    <article className={`mt-6 rounded-2xl border panel ${tone.ring} rise`}>
+    <article className={`mt-6 rounded-2xl border panel ${RING[tone]} rise`}>
       <div className="p-6 sm:p-7">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <span
-            className={`text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${tone.chip}`}
+            className={`text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${CHIP[tone]} ${isUrdu ? "urdu" : ""}`}
           >
-            {tone.label[lang]}
+            {c.tones[tone]}
           </span>
 
-          <div className="flex items-center gap-2">
-            {
-              <>
-                <button
-                  onClick={toggleSpeak}
-                  className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-                    speaking
-                      ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
-                      : "border-[var(--line)] hover:border-[var(--brand)]"
-                  }`}
-                >
-                  {loading ? (
-                    <span className="w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin" />
-                  ) : (
-                    <Icon
-                      name={speaking ? "stop" : "speaker"}
-                      className="w-4 h-4"
-                    />
-                  )}
-                  {speaking ? t.stop : t.listen}
-                </button>
-                <button
-                  onClick={toggleAuto}
-                  aria-pressed={autoSpeak}
-                  title={
-                    autoSpeak
-                      ? "Reading answers aloud automatically"
-                      : "Autoplay off"
-                  }
-                  className={`text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
-                    autoSpeak
-                      ? "border-[var(--brand)] text-[var(--brand)]"
-                      : "border-[var(--line)] muted"
-                  }`}
-                >
-                  AUTO
-                </button>
-              </>
-            }
-
-            <div
-              className="flex rounded-lg border border-[var(--line)] overflow-hidden"
-              role="group"
-              aria-label="Response language"
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => (speaking ? stop() : speakIn(lang))}
+              className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                speaking
+                  ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
+                  : "border-[var(--line)] hover:border-[var(--brand)]"
+              }`}
             >
-              {LANGS.map((l) => (
-                <button
-                  key={l.id}
-                  onClick={() => choose(l.id)}
-                  aria-pressed={lang === l.id}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                    lang === l.id
-                      ? "text-white"
-                      : "hover:bg-[var(--brand-soft)] muted"
-                  }`}
-                  style={
-                    lang === l.id ? { background: "var(--brand)" } : undefined
-                  }
-                >
-                  {l.short}
-                </button>
-              ))}
-            </div>
+              {loading ? (
+                <span className="w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin" />
+              ) : (
+                <Icon name={speaking ? "stop" : "speaker"} className="w-4 h-4" />
+              )}
+              {speaking ? c.stop : c.listen}
+            </button>
+
+            <button
+              onClick={toggleAuto}
+              aria-pressed={autoSpeak}
+              title={
+                autoSpeak ? "Reading answers aloud automatically" : "Autoplay off"
+              }
+              className={`text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
+                autoSpeak
+                  ? "border-[var(--brand)] text-[var(--brand)]"
+                  : "border-[var(--line)] muted"
+              }`}
+            >
+              AUTO
+            </button>
+
+            <LangSwitch />
           </div>
         </div>
 
         <div className={isUrdu ? "urdu" : ""} lang={isUrdu ? "ur" : "en"}>
-          <h2
-            className={`mt-5 font-semibold tracking-tight text-balance ${
-              isUrdu ? "text-2xl leading-relaxed" : "text-2xl"
-            }`}
-          >
+          <h2 className="mt-5 text-2xl font-semibold tracking-tight text-balance">
             {view.title}
           </h2>
-          <p className={`mt-3 leading-relaxed text-pretty ${isUrdu ? "text-xl" : "text-lg"}`}>
+          <p
+            className={`mt-3 leading-relaxed text-pretty ${isUrdu ? "text-xl" : "text-lg"}`}
+          >
             {view.verdict}
           </p>
         </div>
@@ -259,7 +170,7 @@ export default function ResultCard({ result }: { result: Result }) {
           <h3
             className={`text-sm font-semibold uppercase tracking-wide muted ${isUrdu ? "urdu" : ""}`}
           >
-            {t.steps}
+            {c.steps}
           </h3>
           <ol className="mt-4 space-y-3">
             {view.steps.map((s, i) => (
@@ -273,9 +184,7 @@ export default function ResultCard({ result }: { result: Result }) {
                 >
                   {i + 1}
                 </span>
-                <span
-                  className={`leading-relaxed pt-0.5 ${isUrdu ? "urdu" : ""}`}
-                >
+                <span className={`leading-relaxed pt-0.5 ${isUrdu ? "urdu" : ""}`}>
                   {s.text}
                 </span>
               </li>
@@ -286,19 +195,26 @@ export default function ResultCard({ result }: { result: Result }) {
 
       {draft && (
         <div className="border-t border-[var(--line)] px-6 sm:px-7 py-5">
-          <div className="flex items-center justify-between gap-4">
+          {/* Printed by "Download PDF"; hidden on screen. */}
+          <div className={`print-sheet ${isUrdu ? "urdu" : ""}`}>{draft}</div>
+
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <h3
               className={`text-sm font-semibold uppercase tracking-wide muted ${isUrdu ? "urdu" : ""}`}
             >
-              {t.draft}
+              {c.draft}
             </h3>
-            <button
-              onClick={() => void copyDraft()}
-              className="inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border border-[var(--line)] hover:border-[var(--brand)] transition-colors shrink-0"
-            >
-              <Icon name={copied ? "check" : "copy"} className="w-4 h-4" />
-              {copied ? t.copied : t.copy}
-            </button>
+            <DraftActions
+              draft={draft}
+              urdu={isUrdu}
+              title={view.title}
+              labels={{
+                copy: c.copy,
+                copied: c.copied,
+                pdf: c.pdf,
+                word: c.word,
+              }}
+            />
           </div>
           <pre
             className={`mt-4 whitespace-pre-wrap text-[15px] leading-relaxed rounded-xl bg-[var(--bg)] border border-[var(--line)] p-5 max-h-96 overflow-y-auto ${

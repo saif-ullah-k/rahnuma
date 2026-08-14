@@ -62,6 +62,20 @@ const PATHS: Record<string, React.ReactNode> = {
     </>
   ),
   check: <path d="M4 12.5l5 5L20 6.5" />,
+  download: (
+    <>
+      <path d="M12 3v12" />
+      <path d="M7.5 10.5L12 15l4.5-4.5" />
+      <path d="M4 18v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" />
+    </>
+  ),
+  word: (
+    <>
+      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+      <path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z" />
+      <path d="M8.5 12l1.2 4 1.3-3 1.3 3 1.2-4" />
+    </>
+  ),
   alert: (
     <>
       <path d="M12 8v5" />

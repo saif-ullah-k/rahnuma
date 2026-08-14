@@ -6,6 +6,9 @@ import type { AskResponse, Result } from "@/lib/types";
 import Icon from "@/components/Icon";
 import ResultCard from "@/components/ResultCard";
 import { samplesFor } from "@/lib/samples";
+import { useDictation } from "@/lib/useDictation";
+import { useLang } from "@/lib/i18n";
+import Interview from "@/components/Interview";
 
 /**
  * Phone cameras produce 4000px JPEGs. Sending those raw makes the request slow
@@ -91,31 +94,6 @@ function prettySize(bytes: number): string {
 
 type Status = "idle" | "loading" | "done" | "error";
 
-/** Minimal shape of the Web Speech API — it is not in the TS DOM lib. */
-type SpeechRec = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((e: SpeechRecEvent) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-};
-type SpeechRecEvent = {
-  resultIndex: number;
-  results: { length: number; [i: number]: { 0: { transcript: string }; isFinal: boolean } };
-};
-
-function getRecognition(): SpeechRec | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as {
-    SpeechRecognition?: new () => SpeechRec;
-    webkitSpeechRecognition?: new () => SpeechRec;
-  };
-  const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-  return Ctor ? new Ctor() : null;
-}
 
 export default function ToolClient({ mode }: { mode: Mode }) {
   const [preview, setPreview] = useState<string | null>(null);
@@ -130,43 +108,22 @@ export default function ToolClient({ mode }: { mode: Mode }) {
     null,
   );
   const [dragging, setDragging] = useState(false);
-  const [listening, setListening] = useState(false);
   const [voiceLang, setVoiceLang] = useState("ur-PK");
-  const [canListen, setCanListen] = useState(false);
+  const [interviewing, setInterviewing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const recRef = useRef<SpeechRec | null>(null);
 
-  useEffect(() => {
-    setCanListen(Boolean(getRecognition()));
-    return () => recRef.current?.stop();
-  }, []);
+  const {
+    listening,
+    supported: canListen,
+    toggle: toggleDictation,
+    stop: stopDictation,
+  } = useDictation((chunk) =>
+    setText((prev) => (prev ? `${prev} ${chunk}` : chunk).trim()),
+  );
 
-  function toggleListening() {
-    if (listening) {
-      recRef.current?.stop();
-      setListening(false);
-      return;
-    }
-    const rec = getRecognition();
-    if (!rec) return;
-
-    rec.lang = voiceLang;
-    rec.continuous = true;
-    rec.interimResults = false;
-    rec.onresult = (e) => {
-      let chunk = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) chunk += e.results[i][0].transcript;
-      }
-      if (chunk) setText((prev) => (prev ? `${prev} ${chunk}` : chunk).trim());
-    };
-    rec.onerror = () => setListening(false);
-    rec.onend = () => setListening(false);
-
-    recRef.current = rec;
-    rec.start();
-    setListening(true);
-  }
+  const { t, isUrdu } = useLang();
+  const copy = t.modes[mode.id];
+  const u = isUrdu ? "urdu" : "";
 
   const wantsImage = mode.input === "image" || mode.input === "both";
   const wantsText = mode.input === "text" || mode.input === "both";
@@ -218,7 +175,21 @@ export default function ToolClient({ mode }: { mode: Mode }) {
         ? text.trim().length > 3
         : Boolean(payload) || text.trim().length > 3);
 
-  async function submit() {
+  /**
+   * Shikayat runs the interview first: a one-line complaint is missing the
+   * details that get an application accepted at the counter.
+   */
+  function onPrimary() {
+    if (!canSubmit) return;
+    stopDictation();
+    if (mode.id === "shikayat" && text.trim().length > 3) {
+      setInterviewing(true);
+      return;
+    }
+    void submit();
+  }
+
+  async function submit(textOverride?: string) {
     if (!canSubmit) return;
     setStatus("loading");
     setError(null);
@@ -230,7 +201,7 @@ export default function ToolClient({ mode }: { mode: Mode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode: mode.id,
-          text: text.trim() || undefined,
+          text: (textOverride ?? text).trim() || undefined,
           imageBase64: payload?.base64,
           imageMime: payload?.mime,
         }),
@@ -266,8 +237,8 @@ export default function ToolClient({ mode }: { mode: Mode }) {
       <div className="panel rounded-2xl p-5 sm:p-6">
         {wantsImage && (
           <div>
-            <label className="block text-sm font-medium mb-2.5">
-              {mode.imageLabel}
+            <label className={`block text-sm font-medium mb-2.5 ${u}`}>
+              {copy.imageLabel ?? mode.imageLabel}
             </label>
 
             {payload ? (
@@ -307,7 +278,7 @@ export default function ToolClient({ mode }: { mode: Mode }) {
                   }}
                   className="absolute top-2.5 right-2.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-black/70 text-white hover:bg-black/85 transition-colors"
                 >
-                  Replace
+                  {t.tool.replace}
                 </button>
               </div>
             ) : (
@@ -330,12 +301,10 @@ export default function ToolClient({ mode }: { mode: Mode }) {
                 }`}
               >
                 <Icon name="camera" className="w-8 h-8 mx-auto muted" />
-                <p className="mt-3 font-medium text-[15px]">
-                  Take a photo, or choose a file
+                <p className={`mt-3 font-medium text-[15px] ${u}`}>
+                  {t.tool.dropTitle}
                 </p>
-                <p className="mt-1 text-sm muted">
-                  Drag it here, or tap to browse — photo, screenshot or PDF
-                </p>
+                <p className={`mt-1 text-sm muted ${u}`}>{t.tool.dropHint}</p>
               </div>
             )}
 
@@ -355,9 +324,9 @@ export default function ToolClient({ mode }: { mode: Mode }) {
               htmlFor="tool-text"
               className="block text-sm font-medium mb-2.5"
             >
-              {mode.textLabel}
+              {copy.textLabel ?? mode.textLabel}
               {mode.input === "both" && wantsImage && (
-                <span className="muted font-normal"> (optional)</span>
+                <span className="muted font-normal"> {t.tool.optional}</span>
               )}
             </label>
             {mode.id === "dawa" ? (
@@ -388,7 +357,7 @@ export default function ToolClient({ mode }: { mode: Mode }) {
                   <div className="mt-2.5 flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
-                      onClick={toggleListening}
+                      onClick={() => toggleDictation(voiceLang)}
                       className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border transition-colors ${
                         listening
                           ? "border-rose-500 text-rose-600 dark:text-rose-400 bg-rose-500/10"
@@ -403,7 +372,7 @@ export default function ToolClient({ mode }: { mode: Mode }) {
                       ) : (
                         <Icon name="mic" className="w-4 h-4" />
                       )}
-                      {listening ? "Sun raha hoon… tap to stop" : "Bol kar likhein"}
+                      {listening ? t.tool.listening : t.tool.dictate}
                     </button>
 
                     <select
@@ -417,8 +386,8 @@ export default function ToolClient({ mode }: { mode: Mode }) {
                       <option value="en-PK">English</option>
                     </select>
 
-                    <span className="text-xs muted">
-                      Speak naturally — you can edit the text afterwards.
+                    <span className={`text-xs muted ${u}`}>
+                      {t.tool.dictateHint}
                     </span>
                   </div>
                 )}
@@ -429,20 +398,20 @@ export default function ToolClient({ mode }: { mode: Mode }) {
 
         <div className="mt-5 flex items-center gap-3 flex-wrap">
           <button
-            onClick={() => void submit()}
-            disabled={!canSubmit}
+            onClick={onPrimary}
+            disabled={!canSubmit || interviewing}
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110"
             style={{ background: "var(--brand)" }}
           >
             {status === "loading" ? (
               <>
                 <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                Reading…
+                {t.tool.reading}
               </>
             ) : (
               <>
                 <Icon name="arrow" className="w-4 h-4" />
-                {mode.id === "shikayat" ? "Write my application" : "Explain this"}
+                {mode.id === "shikayat" ? t.tool.writeApp : t.tool.explain}
               </>
             )}
           </button>
@@ -453,16 +422,14 @@ export default function ToolClient({ mode }: { mode: Mode }) {
               className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-sm muted hover:text-[var(--text)] transition-colors"
             >
               <Icon name="refresh" className="w-4 h-4" />
-              Start over
+              {t.tool.startOver}
             </button>
           )}
         </div>
 
         {samples.length > 0 && (
           <div className="mt-5 pt-4 border-t border-[var(--line)]">
-            <p className="text-xs muted mb-2.5">
-              Nothing to hand? Open a real example
-            </p>
+            <p className={`text-xs muted mb-2.5 ${u}`}>{t.tool.samples}</p>
             <div className="flex flex-wrap gap-2">
               {samples.map((s) => (
                 <button
@@ -494,21 +461,35 @@ export default function ToolClient({ mode }: { mode: Mode }) {
         )}
       </div>
 
-      {status === "loading" && <LoadingCard />}
+      {interviewing && (
+        <Interview
+          problem={text.trim()}
+          onComplete={(summary) => {
+            setInterviewing(false);
+            void submit(summary);
+          }}
+          onCancel={() => {
+            setInterviewing(false);
+            void submit();
+          }}
+        />
+      )}
+
+      {status === "loading" && <LoadingCard label={t.tool.reading} />}
 
       {status === "error" && error && (
         <div className="mt-6 rounded-2xl p-5 border border-rose-500/30 bg-rose-500/5 rise">
           <div className="flex gap-3">
             <Icon name="alert" className="w-5 h-5 shrink-0 text-rose-500 mt-0.5" />
             <div>
-              <p className="font-medium">That did not work</p>
+              <p className={`font-medium ${u}`}>{t.tool.failed}</p>
               <p className="mt-1 text-sm muted leading-relaxed">{error}</p>
               <button
                 onClick={() => void submit()}
                 disabled={!canSubmit}
-                className="mt-3 text-sm font-medium text-[var(--brand)] hover:underline disabled:opacity-40"
+                className={`mt-3 text-sm font-medium text-[var(--brand)] hover:underline disabled:opacity-40 ${u}`}
               >
-                Try again
+                {t.tool.tryAgain}
               </button>
             </div>
           </div>
@@ -520,7 +501,7 @@ export default function ToolClient({ mode }: { mode: Mode }) {
   );
 }
 
-function LoadingCard() {
+function LoadingCard({ label }: { label: string }) {
   return (
     <div className="mt-6 panel rounded-2xl p-6 space-y-3">
       {[
@@ -535,7 +516,7 @@ function LoadingCard() {
           className={`relative overflow-hidden rounded-lg bg-[var(--line)] shimmer ${cls}`}
         />
       ))}
-      <p className="text-sm muted pt-2">Reading your document…</p>
+      <p className="text-sm muted pt-2">{label}</p>
     </div>
   );
 }
