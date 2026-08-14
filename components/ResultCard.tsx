@@ -36,7 +36,7 @@ export default function ResultCard({ result }: { result: Result }) {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAutoSpeak(localStorage.getItem("kaagaz.autoSpeak") !== "off");
+    setAutoSpeak(localStorage.getItem("rahnuma.autoSpeak") !== "off");
   }, []);
 
   const view = result[lang] ?? result.en;
@@ -79,7 +79,7 @@ export default function ResultCard({ result }: { result: Result }) {
   function toggleAuto() {
     const next = !autoSpeak;
     setAutoSpeak(next);
-    localStorage.setItem("kaagaz.autoSpeak", next ? "on" : "off");
+    localStorage.setItem("rahnuma.autoSpeak", next ? "on" : "off");
     if (!next) stop();
   }
 

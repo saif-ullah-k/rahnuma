@@ -99,7 +99,7 @@ const en: Dict = {
   footer: {
     built: "Built for Pakistan @79 — GDG Live Pakistan, Chai aur Code #1.",
     disclaimer:
-      "Kaagaz explains documents. It does not give medical or legal advice.",
+      "Rahnuma explains documents. It does not give medical or legal advice.",
   },
   home: {
     badge: "Pakistan @79",
@@ -351,7 +351,7 @@ const roman: Dict = {
   footer: {
     built: "Pakistan @79 ke liye banaya gaya — GDG Live Pakistan, Chai aur Code #1.",
     disclaimer:
-      "Kaagaz sirf kaghzaat samjhata hai. Ye medical ya legal mashwara nahi deta.",
+      "Rahnuma sirf kaghzaat samjhata hai. Ye medical ya legal mashwara nahi deta.",
   },
   home: {
     badge: "Pakistan @79",
@@ -493,7 +493,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
 
   useEffect(() => {
-    const saved = localStorage.getItem("kaagaz.lang") as Lang | null;
+    const saved = localStorage.getItem("rahnuma.lang") as Lang | null;
     // Read after mount: the server has no localStorage, and guessing here would
     // cause a hydration mismatch across every translated string on the page.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -502,7 +502,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    localStorage.setItem("kaagaz.lang", l);
+    localStorage.setItem("rahnuma.lang", l);
     window.speechSynthesis?.cancel();
   }, []);
 

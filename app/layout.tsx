@@ -18,7 +18,7 @@ const urdu = Noto_Nastaliq_Urdu({
 });
 
 export const metadata: Metadata = {
-  title: "Kaagaz — Pakistan runs on paper. Now the paper makes sense.",
+  title: "Rahnuma — Pakistan runs on paper. Now the paper makes sense.",
   description:
     "Read any bill, lab report or prescription in plain Urdu. Check if a pharmacy overcharged you. Stay under the 200-unit electricity limit. Turn a complaint into a real application.",
 };

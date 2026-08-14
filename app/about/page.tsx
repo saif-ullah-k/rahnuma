@@ -2,9 +2,9 @@ import Link from "next/link";
 import Icon from "@/components/Icon";
 
 export const metadata = {
-  title: "About — Kaagaz",
+  title: "About — Rahnuma",
   description:
-    "Why Kaagaz exists, what it does not do, and how it was built in two hours for Pakistan @79.",
+    "Why Rahnuma exists, what it does not do, and how it was built in two hours for Pakistan @79.",
 };
 
 export default function AboutPage() {
@@ -32,7 +32,7 @@ export default function AboutPage() {
           filed because nobody knows the words.
         </p>
         <p>
-          Kaagaz does one thing. You photograph the paper. It tells you what the
+          Rahnuma does one thing. You photograph the paper. It tells you what the
           paper says, in plain Urdu, and what to do next.
         </p>
       </div>

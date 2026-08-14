@@ -10,9 +10,9 @@ export function generateStaticParams() {
 export async function generateMetadata(props: PageProps<"/tool/[mode]">) {
   const { mode: id } = await props.params;
   const mode = getMode(id);
-  if (!mode) return { title: "Not found — Kaagaz" };
+  if (!mode) return { title: "Not found — Rahnuma" };
   return {
-    title: `${mode.name} — ${mode.tagline} | Kaagaz`,
+    title: `${mode.name} — ${mode.tagline} | Rahnuma`,
     description: mode.problem,
   };
 }

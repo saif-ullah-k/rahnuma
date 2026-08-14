@@ -16,9 +16,9 @@ export function SiteHeader() {
             style={{ background: "var(--brand)" }}
             aria-hidden
           >
-            ک
+            ر
           </span>
-          <span className="font-semibold tracking-tight text-[17px]">Kaagaz</span>
+          <span className="font-semibold tracking-tight text-[17px]">Rahnuma</span>
         </Link>
 
         <nav className="flex items-center gap-1 text-sm min-w-0">

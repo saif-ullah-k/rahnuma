@@ -1,4 +1,4 @@
-# Kaagaz — 60-second demo script
+# Rahnuma — 60-second demo script
 
 **Before you walk up:** dev server running, `/bijli` open in tab 1, `/tool/samajh` open in tab 2, `/tool/shikayat` open in tab 3. A photo of a real bill or lab report already saved on the machine you are presenting from — do not plan to take a photo live. Phone hotspot on standby.
 
@@ -17,7 +17,7 @@ Both features hide themselves if the browser lacks support, so nothing on screen
 
 Then, without pausing:
 
-> "Kaagaz. Photograph the paper, get back what it says in plain Urdu and what to do about it. Six tools. Start with the one that needs no internet at all."
+> "Rahnuma. Photograph the paper, get back what it says in plain Urdu and what to do about it. Six tools. Start with the one that needs no internet at all."
 
 ---
 

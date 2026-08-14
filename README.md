@@ -1,4 +1,4 @@
-# Kaagaz — کاغذ
+# Rahnuma — کاغذ
 
 **Photograph any Pakistani document and get back what it actually says, in plain Urdu, plus what to do next.**
 
