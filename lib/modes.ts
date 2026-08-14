@@ -152,38 +152,92 @@ Guessing an unclear medicine name is dangerous - say it is unclear instead.`,
     id: "dawa",
     name: "Dawa Sahi",
     nameUr: "دوا صحیح",
-    tagline: "Did the pharmacy overcharge you?",
+    tagline: "What this medicine is, and what it should cost",
     problem:
-      "Every medicine box has a maximum retail price printed on it by law. Pharmacies routinely charge above it and nobody checks.",
+      "People are handed a box across the counter with no explanation - what it treats, how to take it, or what it should have cost. Nobody at the pharmacy stops to tell them.",
     input: "both",
     imageLabel: "Photo of the medicine box (show the printed price)",
-    textLabel: "What did you actually pay?",
-    textPlaceholder: "e.g. 450",
+    textLabel: "Your question, or what you paid",
+    textPlaceholder:
+      "e.g. Ye kis liye hai? / Maine Rs 450 diye / Mujhe gale mein dard hai",
     accent: "amber",
     icon: "receipt",
-    note: "This compares against the price printed on the box. It cannot verify whether the medicine is genuine.",
+    note: "This gives general information about the medicine on the box. It does not diagnose you and it does not replace a doctor or pharmacist.",
     prompt: `${SHARED}
 
-TASK: The image is a medicine box from Pakistan. The user has told you what they were
-charged. The box has a maximum retail price printed on it (look for "M.R.P", "Retail
-Price", "Price Rs", or similar).
+TASK: The image is a medicine box from Pakistan. The user may also have typed or
+dictated something alongside it - a question, a price they paid, or a description of
+their problem. That text may be missing entirely.
 
-Compare:
-- title: the medicine name and pack size
-- verdict: state clearly whether they were overcharged, and by how much. If the
-  printed price is not readable in the image, say so honestly and do not guess.
-- headlineValue: the amount overcharged, with headlineLabel "Overcharged". If they
-  were not overcharged, show the printed price with headlineLabel "Printed price".
-- facts: printed maximum retail price, what they paid, the difference, batch number
-  and expiry if visible
-- steps: if overcharged - ask the pharmacy for the difference, and note that selling
-  above the printed price can be reported to DRAP. If the medicine is expired, say
-  that first and loudest.
-- tone: "bad" if overcharged by more than 10% or expired, "warn" if slightly over,
-  "good" if charged at or below the printed price
+Read the box first: medicine name, pack size, active ingredient (the generic name in
+small print), the maximum retail price (look for "M.R.P", "Retail Price", "Price Rs"
+or similar), batch number and expiry date.
 
-CRITICAL: You are only comparing printed price against amount paid. Never comment on
-whether the medicine is genuine or counterfeit.`,
+Then work out what the user actually wants. Handle any of these:
+
+1. NO TEXT, or "what is this?" - explain what the medicine is and what it is
+   commonly used for.
+2. "How and when do I take it?" - explain the usual way this medicine is taken in
+   general terms only (with or without food, roughly how often, whether a course must
+   be finished). Never state a number of tablets for this person.
+3. A PRICE, e.g. "I paid Rs 450" or just "450" - compare it against the maximum
+   retail price printed on the box and say plainly whether they were overcharged and
+   by how much. If the printed price is not readable in the image, say so honestly
+   and do not guess it.
+4. SYMPTOMS, e.g. "I have a sore throat and fever - is this the right medicine?" -
+   say what the medicine is generally used for, and whether that broadly matches the
+   kind of problem described. Do not diagnose them. Send them to a doctor or
+   pharmacist to confirm before they take it.
+
+A message may combine these - answer all of it.
+
+Fill the fields:
+- title: the medicine name and pack size, e.g. "Panadol 500mg, 10 tablets"
+- verdict: one sentence answering the thing the user actually asked. If they gave a
+  price, that is whether they were overcharged. If they asked what it is for, that is
+  what it treats. If the medicine is expired, that comes first and overrides
+  everything else.
+- headlineValue: ONLY if the user gave a price - the amount overcharged, with
+  headlineLabel "Overcharged"; if they were not overcharged, the printed price with
+  headlineLabel "Printed price". If no price was given, omit headlineValue and
+  headlineLabel entirely.
+- facts: whichever of these apply and are actually known - what the medicine is
+  commonly used for, active ingredient, how it is usually taken, common side effects,
+  common precautions (who should be careful with it), printed maximum retail price,
+  what they paid, the difference, batch number, expiry date.
+- steps: concrete actions, in order. Where the answer touches their own health -
+  dose, whether it suits their symptoms, whether to start or stop it - one step must
+  be to confirm with a doctor or pharmacist first. If overcharged, ask the pharmacy
+  for the difference and note that selling above the printed price can be reported
+  to DRAP.
+- tone: "bad" if the medicine is expired, if the described symptoms need urgent
+  medical attention, or if they were overcharged by more than 10%. "warn" if
+  slightly overcharged, if it is an antibiotic, or if the question needs a doctor
+  before acting. "good" if charged at or below the printed price and nothing else is
+  wrong. Otherwise "neutral".
+
+SAFETY - these rules override everything above and are not optional:
+- Give only general information of the kind printed on a patient information leaflet:
+  what the medicine is commonly used for, the usual way it is taken, common side
+  effects, common precautions.
+- NEVER tell someone to start, stop, or change a prescription medicine.
+- NEVER state a dose for a specific person. If asked "how much should I take", say the
+  dose depends on age, weight and condition, and that a doctor or pharmacist must set
+  it.
+- When symptoms are described, you may say what the medicine is generally used for and
+  whether that matches the described problem in general terms. You MUST NOT diagnose,
+  and you MUST tell them to confirm with a doctor or pharmacist before taking it.
+- If the described symptoms suggest something serious or urgent - chest pain,
+  difficulty breathing, blood, high fever in an infant, pregnancy, or a reaction to a
+  previous dose - the FIRST step must be to see a doctor immediately, and tone must be
+  "bad".
+- If the medicine is an antibiotic, always say that a full course must be completed
+  and that antibiotics must never be taken without a prescription.
+- If the expiry date has passed, say so first and loudest, and set tone "bad".
+- NEVER comment on whether the medicine is genuine or counterfeit - that data is not
+  available to you.
+- Never invent a use, ingredient or price that you cannot see on the box or do not
+  reliably know. Say it is not readable instead.`,
   },
 
   shikayat: {

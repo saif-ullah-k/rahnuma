@@ -6,26 +6,7 @@ import type { AskRequest, AskResponse, Result } from "@/lib/types";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/**
- * Tried in order. Flash models get transient 503s under load and older 2.x models
- * are no longer served to newly issued keys, so a single hard-coded model is a
- * single point of failure — which is unacceptable during a live demo.
- * GEMINI_MODEL, if set, is tried first.
- */
-const MODELS = [
-  process.env.GEMINI_MODEL,
-  "gemini-3.7-flash",
-  "gemini-3.5-flash",
-  "gemini-flash-latest",
-  "gemini-2.5-flash",
-].filter(Boolean) as string[];
-
-/** 503 (overloaded) and 429 (rate limited) are worth retrying on another model. */
-function isTransient(message: string): boolean {
-  return /503|unavailable|high demand|overloaded|429|resource_exhausted/i.test(
-    message,
-  );
-}
+import { MODELS, friendlyError, isFatal } from "@/lib/gemini";
 
 const LOCALIZED = {
   type: Type.OBJECT,
@@ -167,25 +148,11 @@ export async function POST(req: Request) {
     } catch (err) {
       lastError = err instanceof Error ? err.message : "Unknown error";
       console.error(`[ask:${mode.id}] ${model} failed — ${lastError}`);
-      // A model that is missing or busy is worth retrying elsewhere; a rejected
-      // key or a malformed request will fail identically on every model.
-      if (!isTransient(lastError) && !/not_found|404/i.test(lastError)) break;
+      // A rejected key fails identically everywhere; anything else is worth
+      // retrying on the next model, which has its own quota bucket.
+      if (isFatal(lastError)) break;
     }
   }
 
-  {
-    const message = lastError;
-
-    // Key and model problems are actionable; everything else is "try again".
-    const friendly = /api[_ ]?key|unauthenticated|permission|401|403/i.test(
-      message,
-    )
-      ? "The Gemini API key was rejected. Check GEMINI_API_KEY in .env.local."
-      : /not_found|no longer available|404/i.test(message)
-        ? "No available Gemini model accepted this request. Set GEMINI_MODEL to a current model."
-        : isTransient(message)
-          ? "Every Gemini model we tried is busy right now. Give it a moment and try again."
-          : `Could not reach Gemini. ${message}`;
-    return bad(friendly, 502);
-  }
+  return bad(friendlyError(lastError), 502);
 }

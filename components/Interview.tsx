@@ -34,7 +34,14 @@ export default function Interview({
   const [step, setStep] = useState<Step>({ kind: "asking" });
   const [answer, setAnswer] = useState("");
   const { speak, stop: stopSpeaking, speaking } = useSpeech();
-  const { listening, supported, toggle, stop: stopMic } = useDictation((chunk) =>
+  const {
+    listening,
+    transcribing,
+    supported,
+    error: micError,
+    toggle,
+    stop: stopMic,
+  } = useDictation((chunk) =>
     setAnswer((prev) => (prev ? `${prev} ${chunk}` : chunk)),
   );
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -205,15 +212,18 @@ export default function Interview({
             />
             {supported && (
               <button
-                onClick={() => toggle("ur-PK")}
+                onClick={toggle}
+                disabled={transcribing}
                 aria-label={listening ? "Stop listening" : "Answer by voice"}
-                className={`shrink-0 grid place-items-center w-12 rounded-xl border transition-colors ${
+                className={`shrink-0 grid place-items-center w-12 rounded-xl border transition-colors disabled:opacity-50 ${
                   listening
                     ? "border-rose-500 text-rose-600 dark:text-rose-400 bg-rose-500/10"
                     : "border-[var(--line)] hover:border-[var(--brand)]"
                 }`}
               >
-                {listening ? (
+                {transcribing ? (
+                  <span className="w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin" />
+                ) : listening ? (
                   <span className="relative flex w-3 h-3">
                     <span className="absolute inline-flex w-full h-full rounded-full bg-rose-500 opacity-70 animate-ping" />
                     <span className="relative inline-flex w-3 h-3 rounded-full bg-rose-500" />
@@ -232,6 +242,17 @@ export default function Interview({
               <Icon name="arrow" className="w-4 h-4" />
             </button>
           </div>
+
+          {(micError || listening || transcribing) && (
+            <p
+              className={`mt-2 text-xs ${micError ? "text-rose-600 dark:text-rose-400" : "muted"}`}
+            >
+              {micError ??
+                (listening
+                  ? "Bolna shuru karein — khatam ho to mic dobara dabayein."
+                  : "Aap ki baat likh raha hoon…")}
+            </p>
+          )}
         </div>
       )}
 

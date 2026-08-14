@@ -39,6 +39,7 @@ type Dict = {
     dictate: string;
     listening: string;
     dictateHint: string;
+    transcribing: string;
     speakLang: string;
     failed: string;
     tryAgain: string;
@@ -132,6 +133,7 @@ const en: Dict = {
     dictate: "Speak instead of typing",
     listening: "Listening… tap to stop",
     dictateHint: "Speak naturally — you can edit the text afterwards.",
+    transcribing: "Writing down what you said…",
     speakLang: "Speaking language",
     failed: "That did not work",
     tryAgain: "Try again",
@@ -202,11 +204,11 @@ const en: Dict = {
       imageLabel: "Photo or PDF of the prescription",
     },
     dawa: {
-      tagline: "Did the pharmacy overcharge you?",
+      tagline: "What this medicine is, and what it should cost",
       problem:
-        "Every medicine box has a maximum retail price printed on it by law. Pharmacies routinely charge above it and nobody checks.",
+        "A box is handed over the counter with nothing explained — what it is for, how to take it, or what it should have cost. The pharmacy counter is not where anyone gets told.",
       imageLabel: "Photo of the medicine box (show the printed price)",
-      textLabel: "What did you actually pay?",
+      textLabel: "Your question, or what you paid",
     },
     shikayat: {
       tagline: "Turn a complaint into a real application",
@@ -257,6 +259,7 @@ const ur: Dict = {
     dictate: "لکھنے کے بجائے بولیں",
     listening: "سن رہا ہوں… روکنے کے لیے دبائیں",
     dictateHint: "آرام سے بولیں — بعد میں تحریر ٹھیک بھی کر سکتے ہیں۔",
+    transcribing: "آپ کی بات لکھ رہا ہوں…",
     speakLang: "بولنے کی زبان",
     failed: "یہ کام نہیں ہوا",
     tryAgain: "دوبارہ کوشش کریں",
@@ -327,11 +330,11 @@ const ur: Dict = {
       imageLabel: "نسخے کی تصویر یا پی ڈی ایف",
     },
     dawa: {
-      tagline: "کیا میڈیکل سٹور نے زیادہ پیسے لیے؟",
+      tagline: "یہ دوا کس لیے ہے، اور اس کی قیمت کیا ہونی چاہیے",
       problem:
-        "قانون کے مطابق ہر دوا کے ڈبے پر زیادہ سے زیادہ قیمت لکھی ہوتی ہے۔ میڈیکل سٹور اکثر اس سے زیادہ لیتے ہیں اور کوئی چیک نہیں کرتا۔",
+        "کاؤنٹر سے ڈبہ ہاتھ میں تھما دیا جاتا ہے اور کوئی نہیں بتاتا کہ یہ کس مرض کی ہے، کیسے کھانی ہے، یا اس کے پیسے کتنے بنتے تھے۔ میڈیکل سٹور پر یہ سب پوچھنے کا موقع ہی نہیں ملتا۔",
       imageLabel: "دوا کے ڈبے کی تصویر (لکھی ہوئی قیمت نظر آئے)",
-      textLabel: "آپ نے اصل میں کتنے پیسے دیے؟",
+      textLabel: "آپ کا سوال، یا آپ نے کتنے پیسے دیے",
     },
     shikayat: {
       tagline: "شکایت کو اصل درخواست میں بدلیں",
@@ -382,6 +385,7 @@ const roman: Dict = {
     dictate: "Likhne ke bajaye bolein",
     listening: "Sun raha hoon… rokne ke liye dabayein",
     dictateHint: "Aaram se bolein — baad mein tehreer theek bhi kar sakte hain.",
+    transcribing: "Aap ki baat likh raha hoon…",
     speakLang: "Bolne ki zabaan",
     failed: "Ye kaam nahi hua",
     tryAgain: "Dobara koshish karein",
@@ -452,11 +456,11 @@ const roman: Dict = {
       imageLabel: "Nuskhe ki tasweer ya PDF",
     },
     dawa: {
-      tagline: "Kya medical store ne zyada paise liye?",
+      tagline: "Ye dawa kis liye hai, aur iski price kya banti hai",
       problem:
-        "Qanoon ke mutabiq har dawa ke dabbay par maximum price likhi hoti hai. Medical store aksar us se zyada lete hain aur koi check nahi karta.",
+        "Counter se dabba haath mein pakra diya jata hai aur koi nahi batata ke ye kis cheez ki hai, kaise khani hai, ya iske paise kitne bante thay. Medical store par ye sab poochne ka moka hi nahi milta.",
       imageLabel: "Dawa ke dabbay ki tasweer (likhi hui price nazar aaye)",
-      textLabel: "Aap ne asal mein kitne paise diye?",
+      textLabel: "Aap ka sawal, ya aap ne kitne paise diye",
     },
     shikayat: {
       tagline: "Shikayat ko asli darkhwast mein badlein",

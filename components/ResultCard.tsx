@@ -28,7 +28,11 @@ export default function ResultCard({ result }: { result: Result }) {
   const { speak, stop, speaking, loading } = useSpeech();
   const spokenFor = useRef<Result | null>(null);
   const langRef = useRef<Lang>(lang);
-  langRef.current = lang;
+
+  // Declared before the autoplay effect so it is already current when that runs.
+  useEffect(() => {
+    langRef.current = lang;
+  }, [lang]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

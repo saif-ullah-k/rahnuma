@@ -4,13 +4,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODELS = [
-  process.env.GEMINI_MODEL,
-  "gemini-3.7-flash",
-  "gemini-3.5-flash",
-  "gemini-flash-latest",
-  "gemini-2.5-flash",
-].filter(Boolean) as string[];
+import { MODELS } from "@/lib/gemini";
 
 export type Turn = { role: "assistant" | "user"; text: string };
 
