@@ -23,6 +23,8 @@ function browserVoice(urdu: boolean): SpeechSynthesisVoice | null {
 export function useSpeech() {
   const [speaking, setSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
+  /** Autoplay was refused; the audio is ready and waiting for a tap. */
+  const [blocked, setBlocked] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
   const tokenRef = useRef(0);
@@ -64,6 +66,7 @@ export function useSpeech() {
       const token = ++tokenRef.current;
       setLoading(true);
       setSpeaking(true);
+      setBlocked(false);
 
       try {
         const res = await fetch("/api/speak", {
@@ -87,7 +90,16 @@ export function useSpeech() {
         };
         audio.onerror = () => setSpeaking(false);
         setLoading(false);
-        await audio.play();
+
+        try {
+          await audio.play();
+        } catch {
+          // Autoplay was blocked. The natural audio is already downloaded and
+          // ready, so keep it and let the user press Listen — falling back to
+          // the robotic browser voice here would throw away the good audio.
+          setSpeaking(false);
+          setBlocked(true);
+        }
       } catch {
         if (token !== tokenRef.current) return;
         setLoading(false);
@@ -97,5 +109,18 @@ export function useSpeech() {
     [stop, fallback],
   );
 
-  return { speak, stop, speaking, loading };
+  /** Replay audio that was already fetched but blocked by autoplay policy. */
+  const resume = useCallback(async () => {
+    if (!audioRef.current) return false;
+    try {
+      await audioRef.current.play();
+      setBlocked(false);
+      setSpeaking(true);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  return { speak, stop, resume, speaking, loading, blocked };
 }

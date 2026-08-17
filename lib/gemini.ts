@@ -87,6 +87,36 @@ export function getTtsClient(): GoogleGenAI {
   return getClient();
 }
 
+/**
+ * TTS back ends in preference order, so a spent quota falls through instead of
+ * dropping the user to the robotic browser voice.
+ *
+ * AI Studio goes first because the preview TTS models are published there in
+ * every region; Vertex follows because it is backed by Cloud billing or credit
+ * and has no free-tier daily cap. GEMINI_TTS_USE_VERTEX=true reverses the order.
+ */
+export function getTtsClients(): { label: string; client: GoogleGenAI }[] {
+  const out: { label: string; client: GoogleGenAI }[] = [];
+  const apiKey = process.env.GEMINI_API_KEY;
+  const preferVertex = process.env.GEMINI_TTS_USE_VERTEX === "true";
+
+  const aiStudio = apiKey
+    ? [{ label: "ai-studio", client: new GoogleGenAI({ apiKey }) }]
+    : [];
+
+  let vertex: { label: string; client: GoogleGenAI }[] = [];
+  if (USE_VERTEX) {
+    try {
+      vertex = [{ label: "vertex", client: getClient() }];
+    } catch {
+      vertex = []; // misconfigured Vertex must not break AI Studio TTS
+    }
+  }
+
+  out.push(...(preferVertex ? [...vertex, ...aiStudio] : [...aiStudio, ...vertex]));
+  return out;
+}
+
 /** Worth retrying on a different model. */
 export function isTransient(message: string): boolean {
   return /503|unavailable|high demand|overloaded|429|resource_exhausted|quota/i.test(

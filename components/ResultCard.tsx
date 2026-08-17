@@ -25,7 +25,7 @@ const CHIP: Record<Tone, string> = {
 export default function ResultCard({ result }: { result: Result }) {
   const { lang, t, isUrdu } = useLang();
   const [autoSpeak, setAutoSpeak] = useState(true);
-  const { speak, stop, speaking, loading } = useSpeech();
+  const { speak, stop, resume, speaking, loading, blocked } = useSpeech();
   const spokenFor = useRef<Result | null>(null);
   const langRef = useRef<Lang>(lang);
 
@@ -95,9 +95,15 @@ export default function ResultCard({ result }: { result: Result }) {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => (speaking ? stop() : speakIn(lang))}
+              onClick={() => {
+                if (speaking) return stop();
+                // Audio already downloaded but autoplay was refused — play it
+                // rather than fetching again.
+                if (blocked) return void resume();
+                speakIn(lang);
+              }}
               className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-                speaking
+                speaking || blocked
                   ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
                   : "border-[var(--line)] hover:border-[var(--brand)]"
               }`}

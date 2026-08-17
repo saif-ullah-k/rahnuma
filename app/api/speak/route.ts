@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTtsClient } from "@/lib/gemini";
+import { getTtsClients } from "@/lib/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,13 +20,24 @@ const TTS_MODELS = [
 const VOICE_URDU = process.env.GEMINI_TTS_VOICE_UR || "Kore";
 const VOICE_ENGLISH = process.env.GEMINI_TTS_VOICE_EN || "Charon";
 
-const SAMPLE_RATE = 24000;
+const DEFAULT_RATE = 24000;
 const CHANNELS = 1;
 const BITS = 16;
 
+/**
+ * Gemini reports the sample rate in the mime type, e.g.
+ * "audio/L16;codec=pcm;rate=24000". Assuming a fixed rate plays the audio at
+ * the wrong speed and pitch, which is what makes a natural voice sound robotic.
+ */
+function rateFromMime(mime: string | undefined): number {
+  const match = /rate=(\d+)/i.exec(mime ?? "");
+  const rate = match ? Number(match[1]) : NaN;
+  return Number.isFinite(rate) && rate > 0 ? rate : DEFAULT_RATE;
+}
+
 /** Gemini returns raw PCM; browsers need a RIFF/WAVE header in front of it. */
-function toWav(pcm: Buffer): Buffer {
-  const byteRate = (SAMPLE_RATE * CHANNELS * BITS) / 8;
+function toWav(pcm: Buffer, sampleRate: number): Buffer {
+  const byteRate = (sampleRate * CHANNELS * BITS) / 8;
   const blockAlign = (CHANNELS * BITS) / 8;
   const header = Buffer.alloc(44);
 
@@ -37,7 +48,7 @@ function toWav(pcm: Buffer): Buffer {
   header.writeUInt32LE(16, 16); // PCM chunk size
   header.writeUInt16LE(1, 20); // format = PCM
   header.writeUInt16LE(CHANNELS, 22);
-  header.writeUInt32LE(SAMPLE_RATE, 24);
+  header.writeUInt32LE(sampleRate, 24);
   header.writeUInt32LE(byteRate, 28);
   header.writeUInt16LE(blockAlign, 32);
   header.writeUInt16LE(BITS, 34);
@@ -67,18 +78,24 @@ export async function POST(req: Request) {
     ? `Read this out in a warm, calm, natural Urdu speaking voice, at an unhurried pace, as if explaining to an elder who is worried: ${clipped}`
     : `Read this out in a warm, clear, natural voice at a steady pace: ${clipped}`;
 
-  let ai;
-  try {
-    ai = getTtsClient();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Not configured";
-    return NextResponse.json({ error: message }, { status: 500 });
+  const backends = getTtsClients();
+  if (backends.length === 0) {
+    return NextResponse.json(
+      { error: "No TTS back end configured" },
+      { status: 500 },
+    );
   }
   let lastError = "Unknown error";
 
-  for (const model of TTS_MODELS) {
+  // Every model on every back end: a spent AI Studio quota falls through to
+  // Vertex rather than dropping the user to the robotic browser voice.
+  const attempts = backends.flatMap(({ label, client }) =>
+    TTS_MODELS.map((model) => ({ label, client, model })),
+  );
+
+  for (const { label, client, model } of attempts) {
     try {
-      const response = await ai.models.generateContent({
+      const response = await client.models.generateContent({
         model,
         contents: [{ role: "user", parts: [{ text: styled }] }],
         config: {
@@ -102,7 +119,9 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const wav = toWav(Buffer.from(data, "base64"));
+      const rate = rateFromMime(part?.inlineData?.mimeType);
+      console.log(`[speak] ${label}/${model} -> ${rate}Hz`);
+      const wav = toWav(Buffer.from(data, "base64"), rate);
       return new NextResponse(new Uint8Array(wav), {
         headers: {
           "Content-Type": "audio/wav",
@@ -111,7 +130,7 @@ export async function POST(req: Request) {
       });
     } catch (err) {
       lastError = err instanceof Error ? err.message : "Unknown error";
-      console.error(`[speak] ${model} failed — ${lastError}`);
+      console.error(`[speak] ${label}/${model} failed — ${lastError}`);
     }
   }
 
